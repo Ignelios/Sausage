@@ -1,15 +1,15 @@
 import SwiftUI
 
-public extension SausageState {
+public extension SausageEnvironment {
     
     var dragGesture: some Gesture {
-        DragGesture()
+        DragGesture(coordinateSpace: .global)
             .onChanged { [unowned self] in
-                let location = $0.startLocation.y + self.position.height - $0.location.y
+                let location = $0.startLocation.y + self.lastLocation - $0.location.y
                 self.onChanged(location)
             }
             .onEnded { [unowned self] in
-                let location = $0.startLocation.y - $0.predictedEndLocation.y + self.position.height
+                let location = $0.startLocation.y - $0.predictedEndLocation.y + self.lastLocation
                 self.onEnded(location)
             }
     }
@@ -17,26 +17,23 @@ public extension SausageState {
     func onChanged(_ location: CGFloat) {
         
         if shouldApplyGesture(at: location) {
-            currentHeight = location
+            self.location = location
         } else {
-            position(for: location).flatMap { position = $0 }
+            position(for: location).flatMap { lastLocation = $0.height }
         }
         
-        currentAnimation = .none
-        outerOffsetY = location
+        animation = .none
         
-        //print("onChange: \(location)")
     }
 
     func onEnded(_ location: CGFloat) {
-        position(for: location).flatMap { position = $0 }
-        currentAnimation = .spring(response: 0.2, dampingFraction: 0.9, blendDuration: 0.9)
-        //print("onEnded: \(state.position)")
+        position(for: location).flatMap { lastLocation = $0.height }
+        animation = preferredAnimation ?? .spring(response: 0.2, dampingFraction: 0.9, blendDuration: 0.9)
     }
     
 }
 
-private extension SausageState {
+private extension SausageEnvironment {
     
     func shouldApplyGesture(at location: CGFloat) -> Bool {
         

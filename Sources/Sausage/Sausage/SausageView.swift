@@ -1,64 +1,75 @@
 import SwiftUI
 
-public struct Sausage<Content: View>: View {
+public struct SausageView<Content: View>: View {
     
-    @ObservedObject var state = SausageState()
+    // MARK: - Environment
+    
+    @EnvironmentObject var sausageEnvironment: SausageEnvironment
+    @ObservedObject var sausageHeaderEnvironment: SausageHeaderEnvironment = .shared
+    
+    // MARK: - Constructor
     
     internal let content: () -> Content
+    internal let header: SausageHeaderView?
 
-    public init(position: Position.Style = .anchored, @ViewBuilder content: @escaping () -> Content) {
+    public init(
+        header: SausageHeaderView? = nil,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.header = header
         self.content = content
-        self.state.preferredPositionStyle = position
     }
     
 }
 
 // MARK: - Body
 
-struct ContentPreferenceKey: PreferenceKey {
-    static var defaultValue: CGRect = .zero
-    static func reduce(value: inout CGRect, nextValue: () -> CGRect) { defaultValue = nextValue() }
-}
-
-// TODO: Device body and background logic. Maybe allow to provider unique background via constructor.
-public extension Sausage {
+extension SausageView {
     
-    var body: some View {
+    public var body: some View {
         ZStack {
-            
             Color.clear
-            
             ZStack {
-                
-                // TODO: Unique backgroud
-                Color(.systemBackground)
-                    .cornerRadius(radius: 20, corners: [.topLeft, .topRight])
-                    .shadow(radius: 8)
-                    .offset(y: state.currentOffsetY)
-                    .gesture(state.dragGesture)
-                    
-                ScrollViewRepresentable(
-                    axis: .vertical,
-                    isScrollEnabled: $state.isScrollEnabled,
-                    onScrollChanged: $state.onScrollChanged,
-                    onScrollEnded: $state.onScrollEnded,
-                    content: content
-                )
-                .cornerRadius(radius: 20, corners: [.topLeft, .topRight])
-                .offset(y: state.currentOffsetY)
-                .padding(.top, 88)
-                
+                backgroundView
+                VStack(spacing: 0.0) {
+                    headerView
+                        .bounds(key: HeaderPreferenceKey.self) { sausageEnvironment.headerHeight = $0.height }
+                    scrollableView
+                }
+                .clipShape( RoundedRectangle(cornerRadius: sausageEnvironment.cornerRadius.value, style: .continuous) )
+                .offset(y: sausageEnvironment.yOffsetByLocation)
             }
             
         }
-        .bounds(key: ContentPreferenceKey.self) { state.contentHeight = $0.height }
-        .cornerRadius(radius: 20, corners: [.topLeft, .topRight])
-        .animation(state.currentAnimation)
+        .bounds(key: ContentPreferenceKey.self) { sausageEnvironment.contentHeight = $0.height }
+        .onReceive(sausageEnvironment.$safeArea, perform: { sausageHeaderEnvironment.topPadding = $0.value })
+        .animation(sausageEnvironment.animation)
+        .environmentObject(sausageEnvironment)
         .edgesIgnoringSafeArea(.vertical)
     }
-
     
-    // TODO: Implement header
+    // TODO: Unique background
+    private var backgroundView: some View {
+        Color(.systemBackground)
+            .clipShape( RoundedRectangle(cornerRadius: sausageEnvironment.cornerRadius.value, style: .continuous) )
+            .shadow(radius: 8)
+            .offset(y: sausageEnvironment.yOffsetByLocation)
+            .gesture(sausageEnvironment.dragGesture)
+    }
     
-    // -
+    private var headerView: some View {
+        (header ?? .empty)
+            .zIndex(1)
+            .environmentObject(sausageHeaderEnvironment)
+    }
+    
+    private var scrollableView: some View {
+        ScrollViewRepresentable(
+            isScrollEnabled: $sausageEnvironment.isInnerScrollEnabled,
+            onScrollChanged: $sausageEnvironment.onInnerScrollChanged,
+            onScrollEnded: $sausageEnvironment.onInnerScrollEnded,
+            content: content
+        )
+    }
+    
 }

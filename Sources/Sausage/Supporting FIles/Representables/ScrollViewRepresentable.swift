@@ -14,7 +14,7 @@ public struct ScrollViewRepresentable<Content: View>: UIViewRepresentable {
     // MARK: - Init
     
     public init(
-        axis: Axis,
+        axis: Axis = .vertical,
         isScrollEnabled: Binding<Bool> = .constant(true),
         onScrollChanged: Binding<CGPoint>,
         onScrollEnded: Binding<CGPoint>,
@@ -73,7 +73,7 @@ public struct ScrollViewRepresentable<Content: View>: UIViewRepresentable {
     }
     
     public func updateUIView(_ uiView: UIScrollView, context: Context) {
-        // uiView.isScrollEnabled = isScrollEnabled
+        /* Make any updates for scrollView if needed */
     }
     
     // MARK: - Coordinator
@@ -81,6 +81,7 @@ public struct ScrollViewRepresentable<Content: View>: UIViewRepresentable {
     public class Coordinator: NSObject, UIScrollViewDelegate, UIGestureRecognizerDelegate {
         
         let context: ScrollViewRepresentable
+        private var ignoredOffset: CGFloat? = nil
         
         public init(_ context: ScrollViewRepresentable) {
             self.context = context
@@ -91,6 +92,21 @@ public struct ScrollViewRepresentable<Content: View>: UIViewRepresentable {
         public func scrollViewDidScroll(_ scrollView: UIScrollView) {
             guard scrollView.contentOffset.y <= 0 || !context.isScrollEnabled else { return }
             scrollView.contentOffset.y = 0
+        }
+        
+        // TODO: Disable scroll if content is not stretched
+        public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+            ignoredOffset = nil
+            guard !context.isScrollEnabled else { return }
+            scrollView.setContentOffset(.zero, animated: false)
+        }
+        
+        public func scrollViewWillBeginDecelerating(_ scrollView: UIScrollView) {
+            ignoredOffset = nil
+        }
+        
+        public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+            ignoredOffset = scrollView.contentOffset.y
         }
         
         // MARK: - GestureRecognizerDelegate
@@ -109,13 +125,15 @@ public struct ScrollViewRepresentable<Content: View>: UIViewRepresentable {
             if context.isScrollEnabled && context.scrollView.contentOffset.y > 1 { return }
             
             let velocity = sender.velocity(in: context.scrollView)
-            let translation = sender.translation(in: context.scrollView)
+            var translation = sender.translation(in: context.scrollView)
+            translation = CGPoint(x: translation.x, y: translation.y + -(ignoredOffset ?? 0.0))
             
-            if sender.state == .ended {
-                context.onScrollEnded = translation.apply(velocity)
-            } else {
+            guard sender.state == .ended else {
                 context.onScrollChanged = translation
+                return
             }
+            
+            context.onScrollEnded = translation.apply(velocity)
         }
         
     }

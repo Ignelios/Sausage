@@ -14,7 +14,7 @@ struct RoundedCorner: Shape {
 extension View {
 
     func cornerRadius(radius: CGFloat, corners: UIRectCorner) -> some View {
-        clipShape( RoundedCorner(radius: radius, corners: corners) )
+        clipShape( withAnimation { RoundedCorner(radius: radius, corners: corners) } )
     }
     
     func bounds<Key: PreferenceKey>(key: Key.Type, output: @escaping (Key.Value) -> ()) -> some View where Key.Value == CGRect {
