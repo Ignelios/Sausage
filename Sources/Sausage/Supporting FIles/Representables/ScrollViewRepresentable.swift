@@ -8,8 +8,8 @@ public struct ScrollViewRepresentable<Content: View>: UIViewRepresentable {
     @Binding var onScrollChanged: CGPoint
     @Binding var onScrollEnded: CGPoint
     
-    private var scrollView = UIScrollView()
-    private var content: () -> Content
+    var scrollView = UIScrollView()
+    var content: () -> Content
     
     // MARK: - Init
     
@@ -40,6 +40,19 @@ public struct ScrollViewRepresentable<Content: View>: UIViewRepresentable {
         
         // ScrollView
         
+        setupHostingView(for: scrollView, context: context)
+        
+        return scrollView
+        
+    }
+    
+    public func updateUIView(_ scrollView: UIScrollView, context: Context) {
+        scrollView.subviews.forEach { $0.removeFromSuperview() }
+        setupHostingView(for: scrollView, context: context)
+    }
+    
+    private func setupHostingView(for scrollView: UIScrollView, context: Context) {
+        
         let hosting = UIHostingController(rootView: content())
         hosting.view.translatesAutoresizingMaskIntoConstraints = false
         
@@ -67,13 +80,6 @@ public struct ScrollViewRepresentable<Content: View>: UIViewRepresentable {
         }
         
         scrollView.addConstraints(constraints)
-        
-        return scrollView
-        
-    }
-    
-    public func updateUIView(_ uiView: UIScrollView, context: Context) {
-        /* Make any updates for scrollView if needed */
     }
     
     // MARK: - Coordinator
@@ -149,4 +155,3 @@ private extension CGPoint {
     }
     
 }
-
