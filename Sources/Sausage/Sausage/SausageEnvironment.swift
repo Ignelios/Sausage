@@ -188,15 +188,11 @@ extension SausageEnvironment {
     
     var calculatedAnchor: CGFloat {
         switch anchor {
-        case let .fraction(value, includeTopOffset):
+        case let .fraction(value, includeOffsets):
             
-            // TODO: Revisit me
-            let correctHeight = includeTopOffset ? calculatedTop : contentHeight
-            
-            print("[Offset] calculatedTop \(calculatedTop)")
-            print("[Offset] contentHeight \(contentHeight)")
-            print("[Offset] correctHeight \(correctHeight)")
-            print("[Offset] anchor \(correctHeight - (contentHeight * value))")
+            let correctHeight = includeOffsets
+                ? contentHeight - (offset.top.valueWithSafeAreaIfNeeded / 2 - offset.bottom.value / 2)
+                : contentHeight
             
             return correctHeight - (contentHeight * value)
             

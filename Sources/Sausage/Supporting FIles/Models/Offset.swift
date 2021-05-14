@@ -11,7 +11,7 @@ public struct Offset {
             self.includeSafeArea = includeSafeArea
         }
         
-        public static var `default`: Self { .init(value: 0, includeSafeArea: false) }
+        public static var `default`: Self { .init(value: 0, includeSafeArea: true) }
         
         public var valueWithSafeAreaIfNeeded: CGFloat {
             includeSafeArea
