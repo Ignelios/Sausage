@@ -200,6 +200,8 @@ extension SausageEnvironment {
             
             return value <= calculatedBottom
                 ? calculatedBottom
+            : value >= calculatedTop
+                ? calculatedTop
                 : value
         }
     }
