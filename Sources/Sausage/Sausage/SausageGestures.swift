@@ -16,6 +16,8 @@ public extension SausageEnvironment {
 
     func onChanged(_ location: CGFloat) {
         
+        isInnerScrollScrolling = true
+        
         if shouldApplyGesture(at: location) {
             self.location = location
         } else {
@@ -23,19 +25,19 @@ public extension SausageEnvironment {
         }
         
         animation = .none
-        
     }
 
     func onEnded(_ location: CGFloat) {
+        isInnerScrollScrolling = false
         position(for: location).flatMap { lastLocation = $0.height }
         animation = preferredAnimation ?? .spring(response: 0.2, dampingFraction: 0.9, blendDuration: 0.9)
     }
     
 }
 
-private extension SausageEnvironment {
+extension SausageEnvironment {
     
-    func shouldApplyGesture(at location: CGFloat) -> Bool {
+    private func shouldApplyGesture(at location: CGFloat) -> Bool {
         
         let heights = availablePositions.map { $0.height }
         

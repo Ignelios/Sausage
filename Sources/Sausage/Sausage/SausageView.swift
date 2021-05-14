@@ -68,6 +68,7 @@ extension SausageView {
             isScrollEnabled: $sausageEnvironment.isInnerScrollEnabled,
             onScrollChanged: $sausageEnvironment.onInnerScrollChanged,
             onScrollEnded: $sausageEnvironment.onInnerScrollEnded,
+            isRedrawAvailable: sausageEnvironment.isInnerScrollRedrawAvailable,
             content: content
         )
     }

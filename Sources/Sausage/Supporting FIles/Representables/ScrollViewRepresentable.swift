@@ -8,6 +8,7 @@ public struct ScrollViewRepresentable<Content: View>: UIViewRepresentable {
     @Binding var onScrollChanged: CGPoint
     @Binding var onScrollEnded: CGPoint
     
+    var isRedrawAvailable: Bool
     var scrollView = UIScrollView()
     var content: () -> Content
     
@@ -18,12 +19,14 @@ public struct ScrollViewRepresentable<Content: View>: UIViewRepresentable {
         isScrollEnabled: Binding<Bool> = .constant(true),
         onScrollChanged: Binding<CGPoint>,
         onScrollEnded: Binding<CGPoint>,
+        isRedrawAvailable: Bool,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.axis = axis
         self._isScrollEnabled = isScrollEnabled
         self._onScrollChanged = onScrollChanged
         self._onScrollEnded = onScrollEnded
+        self.isRedrawAvailable = isRedrawAvailable
         self.content = content
     }
     
@@ -47,8 +50,9 @@ public struct ScrollViewRepresentable<Content: View>: UIViewRepresentable {
     }
     
     public func updateUIView(_ scrollView: UIScrollView, context: Context) {
-        scrollView.subviews.forEach { $0.removeFromSuperview() }
-        setupHostingView(for: scrollView, context: context)
+        guard isRedrawAvailable else { return }
+//        scrollView.subviews.forEach { $0.removeFromSuperview() }
+//        setupHostingView(for: scrollView, context: context)
     }
     
     private func setupHostingView(for scrollView: UIScrollView, context: Context) {
@@ -128,7 +132,7 @@ public struct ScrollViewRepresentable<Content: View>: UIViewRepresentable {
         
         @objc func draggedView(_ sender: UIPanGestureRecognizer) {
             
-            if context.isScrollEnabled && context.scrollView.contentOffset.y > 1 { return }
+            if context.isScrollEnabled && context.scrollView.contentOffset.y > 0 { return }
             
             let velocity = sender.velocity(in: context.scrollView)
             var translation = sender.translation(in: context.scrollView)

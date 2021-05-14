@@ -5,7 +5,7 @@ public class SausageEnvironment: ObservableObject {
     public init(
         animation: Animation? = nil,
         offset: Offset = .default,
-        anchor: Anchor = .fraction(value: 0.5, includeTopOffset: true),
+        anchor: Anchor = .fraction(value: 0.5, includeOffsets: true),
         safeArea: SafeArea = .default,
         cornerRadius: CornerRadius = .topByDeviceRadius()
     ) {
@@ -30,6 +30,7 @@ public class SausageEnvironment: ObservableObject {
             updateSausageView()
             updateSafeAreaInset()
             updateCornerRadius()
+            updateInnerScrollRedrawAvailability()
         }
     }
     
@@ -47,13 +48,21 @@ public class SausageEnvironment: ObservableObject {
     
     // MARK: - Offsets/Anchor
     
-    var offset: Offset
+    var offset: Offset {
+        didSet { reloadSausagePosition() }
+    }
     
-    var anchor: Anchor
+    var anchor: Anchor {
+        didSet { reloadSausagePosition() }
+    }
     
     // MARK: - Inner Scroll
     
+    var isInnerScrollScrolling: Bool = false
+    
     var isInnerScrollEnabled: Bool = false
+    
+    var isInnerScrollRedrawAvailable: Bool = true
     
     var onInnerScrollChanged: CGPoint = .init(x: 0, y: 0) {
         // NOTICE: min(x,y) can have some unknown issues.
@@ -78,8 +87,7 @@ public class SausageEnvironment: ObservableObject {
 private extension SausageEnvironment {
     
     var anchorFraction: CGFloat {
-        let defaultInset: CGFloat = 44
-        let fractionTrigger: CGFloat = calculatedTop - defaultInset * 2
+        let fractionTrigger: CGFloat = calculatedTop - SafeArea.default.top * 2
         let fraction = location - fractionTrigger
         guard fraction > 0 else { return 0 }
         let fractionDistance = calculatedTop - fractionTrigger
@@ -87,7 +95,7 @@ private extension SausageEnvironment {
     }
 
     func enableInnerScrollIfNeeded() {
-        let locationWithTopOffset = location + offset.top
+        let locationWithTopOffset = location + offset.top.valueWithSafeAreaIfNeeded
         isInnerScrollEnabled = contentHeight == locationWithTopOffset
     }
     
@@ -96,11 +104,29 @@ private extension SausageEnvironment {
     }
     
     func updateSafeAreaInset() {
+        guard
+            offset.top.includeSafeArea,
+            offset.top.value == 0
+        else {
+            safeArea.value = 0
+            return
+        }
         safeArea.value = max(0, 44 * anchorFraction)
     }
     
     func updateCornerRadius() {
+        guard
+            offset.top.includeSafeArea,
+            offset.top.value == 0
+        else {
+            cornerRadius.value = cornerRadius.data.onAnyOther
+            return
+        }
         cornerRadius.value = max(cornerRadius.data.onAnyOther, cornerRadius.data.onTop * anchorFraction)
+    }
+    
+    func updateInnerScrollRedrawAvailability() {
+        isInnerScrollRedrawAvailable = location == calculatedTop || !isInnerScrollScrolling
     }
  
 }
@@ -109,11 +135,11 @@ private extension SausageEnvironment {
 
 public extension SausageEnvironment {
     
-    func setTopOffset(_ offset: CGFloat) {
+    func setTopOffset(_ offset: Offset.Top) {
         self.offset.top = offset
     }
     
-    func setBottomOffset(_ offset: CGFloat) {
+    func setBottomOffset(_ offset: Offset.Bottom) {
         self.offset.bottom = offset
     }
     
@@ -137,6 +163,13 @@ public extension SausageEnvironment {
         self.preferredAnimation = animation
     }
     
+    private func reloadSausagePosition() {
+        position(for: location).flatMap { lastLocation = $0.height }
+        updateSausageView()
+        updateSafeAreaInset()
+        updateCornerRadius()
+    }
+    
 }
 
 // MARK: - Positions
@@ -151,13 +184,20 @@ extension SausageEnvironment {
         ]
     }
     
-    var calculatedTop: CGFloat { contentHeight - offset.top }
+    var calculatedTop: CGFloat { contentHeight - offset.top.valueWithSafeAreaIfNeeded }
     
     var calculatedAnchor: CGFloat {
         switch anchor {
         case let .fraction(value, includeTopOffset):
             
-            let correctHeight = includeTopOffset ? contentHeight : calculatedTop
+            // TODO: Revisit me
+            let correctHeight = includeTopOffset ? calculatedTop : contentHeight
+            
+            print("[Offset] calculatedTop \(calculatedTop)")
+            print("[Offset] contentHeight \(contentHeight)")
+            print("[Offset] correctHeight \(correctHeight)")
+            print("[Offset] anchor \(correctHeight - (contentHeight * value))")
+            
             return correctHeight - (contentHeight * value)
             
         case let .height(value):
@@ -168,6 +208,6 @@ extension SausageEnvironment {
         }
     }
     
-    var calculatedBottom: CGFloat { offset.bottom + (offset.includeHeaderHeight ? headerHeight : 0.0) }
+    var calculatedBottom: CGFloat { offset.bottom.value + (offset.bottom.includeHeaderHeight ? headerHeight : 0.0) }
     
 }
