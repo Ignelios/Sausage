@@ -52,7 +52,7 @@ extension SausageView {
     private var backgroundView: some View {
         Color(.systemBackground)
             .clipShape( RoundedRectangle(cornerRadius: sausageEnvironment.cornerRadius.value, style: .continuous) )
-            .shadow(radius: 8)
+            .shadow(color: Color(UIColor.black.withAlphaComponent(0.12)), radius: 8, x: 0, y: 0)
             .offset(y: sausageEnvironment.yOffsetByLocation)
             .gesture(sausageEnvironment.dragGesture)
     }

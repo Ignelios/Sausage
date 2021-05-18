@@ -22,14 +22,22 @@ public struct Offset {
     
     public struct Bottom {
         public var value: CGFloat
+        public let includeSafeArea: Bool
         public let includeHeaderHeight: Bool
         
-        public init(value: CGFloat, includeHeaderHeight: Bool) {
+        public init(value: CGFloat, includeHeaderHeight: Bool, includeSafeArea: Bool) {
             self.value = value
             self.includeHeaderHeight = includeHeaderHeight
+            self.includeSafeArea = true
         }
         
-        public static var `default`: Self { .init(value: 0, includeHeaderHeight: true) }
+        public static var `default`: Self { .init(value: 0, includeHeaderHeight: true, includeSafeArea: true) }
+        
+        public var valueWithSafeAreaIfNeeded: CGFloat {
+            includeSafeArea
+                ? value > 0 ? SafeArea.default.top + value : value
+                : value
+        }
     }
     
     public var top: Top

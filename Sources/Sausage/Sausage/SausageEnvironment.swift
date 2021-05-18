@@ -189,9 +189,9 @@ extension SausageEnvironment {
     var calculatedAnchor: CGFloat {
         switch anchor {
         case let .fraction(value, includeOffsets):
-            
+            // TODO: Take along and header height
             let correctHeight = includeOffsets
-                ? contentHeight - (offset.top.valueWithSafeAreaIfNeeded / 2 - offset.bottom.value / 2)
+                ? contentHeight - (offset.top.valueWithSafeAreaIfNeeded / 2 - offset.bottom.valueWithSafeAreaIfNeeded / 2)
                 : contentHeight
             
             return correctHeight - (contentHeight * value)
@@ -206,6 +206,6 @@ extension SausageEnvironment {
         }
     }
     
-    var calculatedBottom: CGFloat { offset.bottom.value + (offset.bottom.includeHeaderHeight ? headerHeight : 0.0) }
+    var calculatedBottom: CGFloat { offset.bottom.valueWithSafeAreaIfNeeded + (offset.bottom.includeHeaderHeight ? headerHeight : 0.0) }
     
 }
